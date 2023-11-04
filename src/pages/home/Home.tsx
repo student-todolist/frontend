@@ -2,17 +2,18 @@
 //aka index.js
 
 import {useState, useRef, useEffect} from 'react';
-import Todo from '../../components/Todo/Todo.tsx';
 import { db } from '../../firebase.ts'
-import {collection, onSnapshot} from '@firebase/firestore';
+import {doc, deleteDoc, addDoc, collection, onSnapshot} from '@firebase/firestore';
 
 //function home is function app
 
 interface todo_type {
+    id: string,
     todo: string
 }
 
 function Home() {
+
 
     const [todos, setTodos ] = useState<todo_type[]>([]);
 
@@ -20,8 +21,10 @@ function Home() {
 
     useEffect(() => {
         onSnapshot(collection(db, "todos"), (snapshot: any) => {
-            return setTodos(snapshot.docs.map((doc: any) => doc.data()));
-        }); 
+            return setTodos(snapshot.docs.map((doc: any) => {
+                return {id: doc.id, todo: doc.data()['todo']}
+            }));
+        });
 
         return () => {
 
@@ -30,8 +33,9 @@ function Home() {
 
     const addTodo = (e: any) => {
         e.preventDefault()
+
         // @ts-ignore
-        setTodos([...todos, {'todo': input.current.value}]);
+        addDoc(collection(db, "todos" ), {'todo': input.current.value})
         // @ts-ignore
         input.current.value = ""
     };
@@ -48,11 +52,15 @@ function Home() {
             </form>
             <ul>
                 {
-                    todos.map((todo: todo_type) => (
-                        <li key={JSON.stringify(todo)}>
-                            {todo['todo']}
-                        </li>
-                    ))
+                    todos.map((todo: todo_type) => {
+                        console.log(todo)
+                        return (
+                            <li key={JSON.stringify(todo)}>
+                                {todo['todo']}
+                                <button className="px-2 text-red-500" onClick={() => deleteDoc(doc(db, "todos", todo.id))}>X</button>
+                            </li>
+                        )
+                    })
                 }
             </ul>
         </div>
